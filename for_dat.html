@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Form Data</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #e0f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 40px;
+      min-height: 100vh;
+    }
+
+    .container {
+      background-color: #ffffff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h1 {
+      margin-bottom: 25px;
+      color: #000000;
+      font-size: 24px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      color: #000000;
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .form-group input:focus {
+      border-color: #0056b3;
+      outline: none;
+    }
+
+    #submitForm {
+      width: 100%;
+      padding: 12px;
+      background-color: #0056b3;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    #submitForm:hover {
+      background-color: #004494;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #00796b;
+      color: white;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #f1f1f1;
+    }
+
+    .button-group {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .button-group button {
+      padding: 10px 15px;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #backToDashboard { background-color: #0056b3; }
+    #uploadHistory { background-color: #00897b; }
+    #downloadExcel { background-color: #25f953; }
+
+    /* Sembunyikan form input untuk nama pengguna dan nama file */
+    #userFileInput {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Form Data</h1>
+
+    <form id="dynamicForm"></form>
+    <button id="submitForm">Simpan</button>
+
+    <div id="output">
+      <h2 style="color: #000000; font-size:18px;">Data Tersimpan</h2>
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>No</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="button-group">
+        <button id="backToDashboard">Kembali ke Dasboard</button>
+        <button id="uploadHistory">Upload ke History</button>
+        <button id="downloadExcel">Download Excel</button>
+      </div>
+    </div>
+
+    <!-- Pindahkan form input nama pengguna dan nama file ke bawah daftar data yang sudah disimpan -->
+    <div id="userFileInput">
+      <div class="form-group">
+        <label for="username">Nama Pengguna:</label>
+        <input type="text" id="username" placeholder="Masukkan nama Anda" required />
+      </div>
+
+      <div class="form-group">
+        <label for="filename">Nama File (untuk History):</label>
+        <input type="text" id="filename" placeholder="Masukkan nama file" required />
+      </div>
+
+      <button id="confirmUpload">Konfirmasi</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    const formVariables = JSON.parse(localStorage.getItem('formVariables')) || [];
+    const form = document.getElementById('dynamicForm');
+    const dataTable = document.getElementById('dataTable');
+    const theadRow = dataTable.querySelector('thead tr');
+    const tbody = dataTable.querySelector('tbody');
+
+    formVariables.forEach(variable => {
+      const th = document.createElement('th');
+      th.textContent = variable.nama;
+      theadRow.appendChild(th);
+
+      const formGroup = document.createElement('div');
+      formGroup.className = 'form-group';
+
+      const label = document.createElement('label');
+      label.textContent = variable.nama + ':';
+      label.setAttribute('for', variable.nama);
+
+      const input = document.createElement('input');
+      input.setAttribute('type', variable.tipe);
+      input.setAttribute('id', variable.nama);
+      input.setAttribute('name', variable.nama);
+      input.required = true;
+
+      formGroup.appendChild(label);
+      formGroup.appendChild(input);
+      form.appendChild(formGroup);
+    });
+
+    let counter = 1;
+
+    document.getElementById('submitForm').addEventListener('click', function (event) {
+      event.preventDefault();
+
+      const row = document.createElement('tr');
+      const noCell = document.createElement('td');
+      noCell.textContent = counter++;
+      row.appendChild(noCell);
+
+      formVariables.forEach(variable => {
+        const value = document.getElementById(variable.nama).value;
+        const td = document.createElement('td');
+        td.textContent = value;
+        row.appendChild(td);
+      });
+
+      tbody.appendChild(row);
+      form.reset();
+    });
+
+    document.getElementById('backToDashboard').addEventListener('click', function () {
+      const konfirmasi = confirm('Apakah data sudah disimpan ke direktori Anda?, Karna halaman akan di riset\nKlik "OK" untuk melanjutkan ke dasboard.\nKlik "Cancel" untuk tetap di halaman ini.');
+      if (konfirmasi) {
+        window.location.href = 'index.html';
+      }
+    });
+
+    document.getElementById('uploadHistory').addEventListener('click', function () {
+      // Tampilkan form input untuk nama pengguna dan nama file
+      document.getElementById('userFileInput').style.display = 'block';
+    });
+
+    document.getElementById('confirmUpload').addEventListener('click', function () {
+      const username = document.getElementById('username').value.trim();
+      const filename = document.getElementById('filename').value.trim();
+      if (!username || !filename) {
+        alert("Silakan isi nama pengguna dan nama file sebelum upload.");
+        return;
+      }
+
+      const rows = [];
+      const tableRows = tbody.querySelectorAll('tr');
+
+      tableRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const data = {};
+        data['No'] = cells[0].textContent;
+        formVariables.forEach((variable, i) => {
+          data[variable.nama] = cells[i + 1].textContent;
+        });
+        rows.push(data);
+      });
+
+      const history = JSON.parse(localStorage.getItem('fileHistory')) || [];
+      const now = new Date().toLocaleString();
+
+      const item = {
+        nama: filename, // Menggunakan nama file dari input pengguna
+        tanggal: now,
+        pengguna: username,
+        data: rows
+      };
+
+      history.push(item);
+      localStorage.setItem('fileHistory', JSON.stringify(history));
+      alert('Data berhasil diunggah ke history dengan nama file: ' + filename);
+
+      // Sembunyikan kembali form input setelah upload
+      document.getElementById('userFileInput').style.display = 'none';
+    });
+
+    document.getElementById('downloadExcel').addEventListener('click', function () {
+      const rows = [];
+      const header = ['No', ...formVariables.map(v => v.nama)];
+      rows.push(header);
+
+      const tableRows = tbody.querySelectorAll('tr');
+      tableRows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td')).map(cell => cell.textContent);
+        rows.push(cells);
+      });
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "Data");
+      XLSX.writeFile(wb, "data_tersimpan.xlsx");
+    });
+  </script>
+</body>
+</html>

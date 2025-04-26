@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Buat Data</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #e0f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      text-align: left;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 450px;
+    }
+    .form-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      width: 120px;
+      margin-bottom: 0;
+    }
+    .form-group input,
+    .form-group select {
+      flex: 1;
+    }
+    input, select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      flex: 1;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .delete-button {
+      background-color: #dc3545;
+    }
+    .delete-button:hover {
+      background-color: #b02a37;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Buat Variabel</h1>
+    <form id="dataForm">
+      <div id="variableInputs">
+        <div class="form-group">
+          <label for="variableName0">Nama Variabel:</label>
+          <input type="text" id="variableName0" name="variableName[]" required />
+          <label for="variableType0">Type:</label>
+          <select id="variableType0" name="variableType[]" required>
+            <option value="text">Teks</option>
+            <option value="number">Angka</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="button" id="addVariable">Tambah Variabel</button>
+        <button type="button" id="removeVariable" class="delete-button">Hapus Variabel</button>
+        <button type="submit">Simpan</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    let variableCount = 1;
+
+    document.getElementById('addVariable').addEventListener('click', function () {
+      const variableInputs = document.getElementById('variableInputs');
+
+      const newVariableGroup = document.createElement('div');
+      newVariableGroup.className = 'form-group';
+
+      newVariableGroup.innerHTML = `
+        <label for="variableName${variableCount}">Nama Variabel:</label>
+        <input type="text" id="variableName${variableCount}" name="variableName[]" required>
+        <label for="variableType${variableCount}">Tipe Variabel:</label>
+        <select id="variableType${variableCount}" name="variableType[]" required>
+          <option value="text">Teks</option>
+          <option value="number">Angka</option>
+        </select>
+      `;
+
+      variableInputs.appendChild(newVariableGroup);
+      variableCount++;
+    });
+
+    document.getElementById('removeVariable').addEventListener('click', function () {
+      const variableInputs = document.getElementById('variableInputs');
+      const allGroups = variableInputs.querySelectorAll('.form-group');
+
+      // Jangan hapus baris pertama (default)
+      if (allGroups.length > 1) {
+        variableInputs.removeChild(allGroups[allGroups.length - 1]);
+        variableCount--;
+      } else {
+        alert("Minimal harus ada satu variabel.");
+      }
+    });
+
+    document.getElementById('dataForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const variableNames = document.querySelectorAll('input[name="variableName[]"]');
+      const variableTypes = document.querySelectorAll('select[name="variableType[]"]');
+
+      const data = [];
+
+      for (let i = 0; i < variableNames.length; i++) {
+        data.push({
+          nama: variableNames[i].value,
+          tipe: variableTypes[i].value
+        });
+      }
+
+      // Simpan data ke localStorage
+      localStorage.setItem('formVariables', JSON.stringify(data))
+
+      // Arahkan ke halaman for_dat.html
+      window.location.href = 'for_dat.html';
+    });
+  </script>
+</body>
+</html>
