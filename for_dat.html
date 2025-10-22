@@ -32,10 +32,7 @@
       text-align: center;
     }
 
-    .form-group {
-      margin-bottom: 20px;
-    }
-
+    .form-group { margin-bottom: 20px; }
     .form-group label {
       display: block;
       margin-bottom: 6px;
@@ -51,11 +48,6 @@
       font-size: 16px;
     }
 
-    .form-group input:focus {
-      border-color: #0056b3;
-      outline: none;
-    }
-
     #submitForm {
       width: 100%;
       padding: 12px;
@@ -67,10 +59,7 @@
       cursor: pointer;
       margin-bottom: 20px;
     }
-
-    #submitForm:hover {
-      background-color: #004494;
-    }
+    #submitForm:hover { background-color: #004494; }
 
     table {
       width: 100%;
@@ -89,9 +78,7 @@
       color: white;
     }
 
-    tbody tr:nth-child(even) {
-      background-color: #f1f1f1;
-    }
+    tbody tr:nth-child(even) { background-color: #f1f1f1; }
 
     .button-group {
       margin-top: 20px;
@@ -108,13 +95,56 @@
     }
 
     #backToDashboard { background-color: #0056b3; }
-    #uploadHistory { background-color: #00897b; }
-    #downloadExcel { background-color: #25f953; }
+    #downloadExcel { background-color: #00897b; color: #ffffff; }
 
-    /* Sembunyikan form input untuk nama pengguna dan nama file */
-    #userFileInput {
+    .edit-btn { background-color: #ff9800; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 13px; margin-right:6px; }
+    .edit-btn:hover { background-color: #e68900; }
+
+    .delete-btn { background-color: #e53935; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 13px; }
+    .delete-btn:hover { background-color: #c62828; }
+
+    /* popup edit */
+    .popup-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
       display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
     }
+    .popup-box {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      width: 350px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .popup-box h3 {
+      margin-bottom: 15px;
+      color: #00796b;
+      text-align: center;
+    }
+    .popup-box input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .popup-buttons {
+      text-align: right;
+      margin-top: 10px;
+    }
+    .popup-buttons button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .save-btn { background: #00796b; color: white; }
+    .cancel-btn { background: #e53935; color: white; margin-left: 8px; }
   </style>
 </head>
 <body>
@@ -136,36 +166,40 @@
       </table>
 
       <div class="button-group">
-        <button id="backToDashboard">Kembali ke Dasboard</button>
-        <button id="uploadHistory">Upload ke History</button>
+        <button id="backToDashboard">Kembali ke Dasbor</button>
         <button id="downloadExcel">Download Excel</button>
       </div>
     </div>
+  </div>
 
-    <!-- Pindahkan form input nama pengguna dan nama file ke bawah daftar data yang sudah disimpan -->
-    <div id="userFileInput">
-      <div class="form-group">
-        <label for="username">Nama Pengguna:</label>
-        <input type="text" id="username" placeholder="Masukkan nama Anda" required />
+  <!-- Popup edit -->
+  <div class="popup-container" id="popupContainer">
+    <div class="popup-box">
+      <h3>Edit Data</h3>
+      <form id="popupForm"></form>
+      <div class="popup-buttons">
+        <button class="save-btn" id="saveEdit">Simpan Perubahan</button>
+        <button class="cancel-btn" id="cancelEdit">Batal</button>
       </div>
-
-      <div class="form-group">
-        <label for="filename">Nama File (untuk History):</label>
-        <input type="text" id="filename" placeholder="Masukkan nama file" required />
-      </div>
-
-      <button id="confirmUpload">Konfirmasi</button>
     </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
-    const formVariables = JSON.parse(localStorage.getItem('formVariables')) || [];
+    const formVariables = JSON.parse(localStorage.getItem('formVariables')) || [
+      { nama: 'Nama', tipe: 'text' },
+      { nama: 'Umur', tipe: 'number' },
+      { nama: 'Alamat', tipe: 'text' }
+    ];
+
     const form = document.getElementById('dynamicForm');
+    const popupForm = document.getElementById('popupForm');
     const dataTable = document.getElementById('dataTable');
     const theadRow = dataTable.querySelector('thead tr');
     const tbody = dataTable.querySelector('tbody');
+    const submitBtn = document.getElementById('submitForm');
 
+    // buat header kolom dinamis
     formVariables.forEach(variable => {
       const th = document.createElement('th');
       th.textContent = variable.nama;
@@ -176,102 +210,121 @@
 
       const label = document.createElement('label');
       label.textContent = variable.nama + ':';
-      label.setAttribute('for', variable.nama);
-
       const input = document.createElement('input');
-      input.setAttribute('type', variable.tipe);
-      input.setAttribute('id', variable.nama);
-      input.setAttribute('name', variable.nama);
+      input.type = variable.tipe;
+      input.id = variable.nama;
+      input.name = variable.nama;
       input.required = true;
 
       formGroup.appendChild(label);
       formGroup.appendChild(input);
       form.appendChild(formGroup);
+
+      // juga buat field di popup edit
+      const popupLabel = document.createElement('label');
+      popupLabel.textContent = variable.nama + ':';
+      const popupInput = document.createElement('input');
+      popupInput.type = variable.tipe;
+      popupInput.id = 'edit-' + variable.nama;
+      popupForm.appendChild(popupLabel);
+      popupForm.appendChild(popupInput);
     });
 
-    let counter = 1;
+    const thAksi = document.createElement('th');
+    thAksi.textContent = 'Aksi';
+    theadRow.appendChild(thAksi);
 
-    document.getElementById('submitForm').addEventListener('click', function (event) {
+    function renumberRows() {
+      const rows = tbody.querySelectorAll('tr');
+      rows.forEach((r, idx) => r.querySelector('td').textContent = idx + 1);
+    }
+
+    submitBtn.addEventListener('click', (event) => {
       event.preventDefault();
 
       const row = document.createElement('tr');
       const noCell = document.createElement('td');
-      noCell.textContent = counter++;
+      noCell.textContent = tbody.querySelectorAll('tr').length + 1;
       row.appendChild(noCell);
 
       formVariables.forEach(variable => {
-        const value = document.getElementById(variable.nama).value;
         const td = document.createElement('td');
-        td.textContent = value;
+        td.textContent = document.getElementById(variable.nama).value;
         row.appendChild(td);
       });
+
+      const actionCell = document.createElement('td');
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.className = 'edit-btn';
+      editBtn.addEventListener('click', () => openEdit(row));
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Hapus';
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.addEventListener('click', () => deleteRow(row));
+
+      actionCell.appendChild(editBtn);
+      actionCell.appendChild(deleteBtn);
+      row.appendChild(actionCell);
 
       tbody.appendChild(row);
       form.reset();
     });
 
-    document.getElementById('backToDashboard').addEventListener('click', function () {
-      const konfirmasi = confirm('Apakah data sudah disimpan ke direktori Anda?, Karna halaman akan di riset\nKlik "OK" untuk melanjutkan ke dasboard.\nKlik "Cancel" untuk tetap di halaman ini.');
-      if (konfirmasi) {
-        window.location.href = 'index.html';
-      }
-    });
+    // Popup edit logic
+    const popupContainer = document.getElementById('popupContainer');
+    const saveEdit = document.getElementById('saveEdit');
+    const cancelEdit = document.getElementById('cancelEdit');
+    let currentRow = null;
 
-    document.getElementById('uploadHistory').addEventListener('click', function () {
-      // Tampilkan form input untuk nama pengguna dan nama file
-      document.getElementById('userFileInput').style.display = 'block';
-    });
-
-    document.getElementById('confirmUpload').addEventListener('click', function () {
-      const username = document.getElementById('username').value.trim();
-      const filename = document.getElementById('filename').value.trim();
-      if (!username || !filename) {
-        alert("Silakan isi nama pengguna dan nama file sebelum upload.");
-        return;
-      }
-
-      const rows = [];
-      const tableRows = tbody.querySelectorAll('tr');
-
-      tableRows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        const data = {};
-        data['No'] = cells[0].textContent;
-        formVariables.forEach((variable, i) => {
-          data[variable.nama] = cells[i + 1].textContent;
-        });
-        rows.push(data);
+    function openEdit(row) {
+      currentRow = row;
+      const cells = row.querySelectorAll('td');
+      formVariables.forEach((v, i) => {
+        document.getElementById('edit-' + v.nama).value = cells[i + 1].textContent;
       });
+      popupContainer.style.display = 'flex';
+    }
 
-      const history = JSON.parse(localStorage.getItem('fileHistory')) || [];
-      const now = new Date().toLocaleString();
+    saveEdit.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!currentRow) return;
+      const cells = currentRow.querySelectorAll('td');
+      formVariables.forEach((v, i) => {
+        cells[i + 1].textContent = document.getElementById('edit-' + v.nama).value;
+      });
+      alert('✅ Data berhasil diperbarui!');
+      popupContainer.style.display = 'none';
+      currentRow = null;
+    });
 
-      const item = {
-        nama: filename, // Menggunakan nama file dari input pengguna
-        tanggal: now,
-        pengguna: username,
-        data: rows
-      };
+    cancelEdit.addEventListener('click', (e) => {
+      e.preventDefault();
+      popupContainer.style.display = 'none';
+      currentRow = null;
+    });
 
-      history.push(item);
-      localStorage.setItem('fileHistory', JSON.stringify(history));
-      alert('Data berhasil diunggah ke history dengan nama file: ' + filename);
+    function deleteRow(row) {
+      const nomor = row.querySelector('td').textContent;
+      if (confirm(`Yakin ingin menghapus data baris No ${nomor}?`)) {
+        row.remove();
+        renumberRows();
+      }
+    }
 
-      // Sembunyikan kembali form input setelah upload
-      document.getElementById('userFileInput').style.display = 'none';
+    document.getElementById('backToDashboard').addEventListener('click', function () {
+      if (confirm('Apakah data sudah disimpan?')) window.location.href = 'index.html';
     });
 
     document.getElementById('downloadExcel').addEventListener('click', function () {
       const rows = [];
       const header = ['No', ...formVariables.map(v => v.nama)];
       rows.push(header);
-
-      const tableRows = tbody.querySelectorAll('tr');
-      tableRows.forEach(row => {
+      tbody.querySelectorAll('tr').forEach(row => {
         const cells = Array.from(row.querySelectorAll('td')).map(cell => cell.textContent);
-        rows.push(cells);
+        rows.push(cells.slice(0, -1));
       });
-
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(rows);
       XLSX.utils.book_append_sheet(wb, ws, "Data");
